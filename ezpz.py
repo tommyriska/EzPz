@@ -14,14 +14,15 @@ def cli():
 
 @cli.command()
 def menu():
+    checkconfig()
     menu = 'main'
     while True:
         if menu == 'main':
             click.clear()
             printbanner()
             click.echo('\nMain menu:')
-            click.echo('    1. Recieve a file')
-            click.echo('    2. Send a file')
+            click.echo('    1. Send a file')
+            click.echo('    2. Receive a file')
             click.echo('    3. Instructions')
             click.echo('    4. Settings')
             click.echo('    5. About')
@@ -34,48 +35,52 @@ def menu():
             if char == '1':
                 click.clear()
                 printbanner()
-                reciever()
-                click.echo('\n\nFILE RECIEVED')
-                click.echo('\nb: back')
-                char = click.getchar()
-                if char == 'b':
-                    menu = 'main'
-                else:
-                    click.echo('Invalid input')
+                sender()
 
             # Send a file
             elif char == '2':
                 click.clear()
                 printbanner()
-                sender()
-
-                #click.echo('\n\nFILE SENT!')
-                #click.echo('\nb: back')
-                #char = click.getchar()
-                #if char == 'b':
-                #    menu = 'main'
-                #else:
-                #    click.echo('Invalid input')
+                reciever()
 
             # Instructions
             elif char == '3':
                 click.clear()
-                printbanner()
-                click.echo('INSTRUCTIONS:')
-                click.echo("""
-    1. Reciever selects menu option #2.
-    2. Sender selects menu option #1.
-    3. Sender chooses a file to send.
+                click.echo_via_pager("""
+    _________________________________________________________________________
+    |                     _______     _____                                 |
+    |                    |  ____|   |  __  |                                |
+    |                    | |__   ___| |__) |___                             |
+    |                    |  __| |_  /  ___/_  /                             |
+    |                    | |____ / /| |    / /                              |
+    |                    |______/___|_|   /___|                             |
+    |_______________________________________________________________________|
+
+    INSTRUCTIONS:
+
+    Send a file:
+    1. Select menu option #1.
+    2. Select port, default is 1337.
+    3. Select file to send.
+    4. Wait for incoming connection.
+    5. Wait for file transfer to be done then click 'M' to return
+       to main menu.
+
+    Receive a file:
+    1. Select menu option #2.
+    2. Select IP to connect to. This should be senders public IP or
+       local IP in the case of a LAN transfer.
+    3. Select a port to connect to. Has to be specifically the port
+       the sender selected.
+    4. Wait for download to be finished then click 'M' to return
+       to main menu.
 
     Important! All files will currently be saved in users home directory.
                More configurations will come later.
+
+    Press 'Q' to get back to main menu.
         """)
-                click.echo('\nb: back')
-                char = click.getchar()
-                if char == 'b':
-                    menu = 'main'
-                else:
-                    click.echo('Invalid input')
+                menu == 'main'
 
             # Configuration
             elif char == '4':
@@ -85,6 +90,8 @@ def menu():
                 with open('config.json', 'r') as f:
                     config = json.load(f)
                     click.echo(json.dumps(config))
+                click.echo('\nSettings are not implemented yet!')
+                click.echo('\nBack: b')
 
                 char = click.getchar()
                 if char == 'b':
@@ -97,17 +104,7 @@ def menu():
                 click.echo('ABOUT EzPz:\n\n')
                 click.echo('Made by Tommy Riska')
                 click.echo('Version 0.0.1')
-                click.echo('\nb: back')
-                char = click.getchar()
-                if char == 'b':
-                    menu = 'main'
-                else:
-                    click.echo('Invalid input')
-            elif char == '6':
-                downloadpath = Path.home()
-                filename = 'fissa.txt'
-                joinedpath = Path.joinpath(downloadpath, filename)
-                click.echo(joinedpath)
+                click.echo('\nBack: b')
                 char = click.getchar()
                 if char == 'b':
                     menu = 'main'
@@ -122,14 +119,18 @@ def checkconfig():
     if os.path.isfile('config.json') and os.access('config.json', os.R_OK):
         return True
     else:
-        click.echo('No configuration file found. Creating one.')
+        click.clear()
+        printbanner()
+        click.echo('\nNo configuration file found. Creating one.')
         currentdir = os.getcwd()
         click.echo('CURRENT DIR:' + currentdir)
         with io.open(os.path.join(currentdir, 'config.json'), 'w') as db_file:
-            db_file.write(json.dumps({"name":"Tommers"}))
-        click.echo('New configuration file was created. Please restart the program now.')
-        click.pause(info='Press any key to quit ...')
-        os._exit(1)
+            db_file.write(json.dumps({"Version":"0.0.1"}))
+        click.echo('New configuration file was created.')
+        click.pause(info='Press any key to restart the program.')
+        return True
+        #click.pause(info='Press any key to quit ...')
+        #os._exit(1)
 
 def printbanner():
     click.echo(click.style("""
@@ -194,6 +195,7 @@ def sender():
                         with open(filepath, 'rb') as f:
                             conn.sendfile(file=f)
                             click.echo('Download complete!')
+                            conn.shutdown(socket.SHUT_RDWR)
                             click.echo('Click M to go back to menu.')
                             char = click.getchar()
                             if char == 'm':
@@ -204,13 +206,13 @@ def sender():
                         click.echo('NO FILENAME RESPONSE')
                 else:
                     click.echo('NO FILESIZE RESPONSE')
-                    conn.shutdown(socket.SHUT_RDWR)
+
 
 def reciever():
     """THIS ACTS AS THE CLIENT"""
     click.clear()
     printbanner()
-    host = click.prompt(text='Choose what IP to connect to', default='localhost')
+    host = click.prompt(text='Choose what IP to connect to')
     port = int(click.prompt(text='Choose what port to connect to'))
     downloadpath = Path.home()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -220,7 +222,6 @@ def reciever():
         filesize = s.recv(20)
         s.sendall(b'Filesize recieved')
         filesize = filesize.decode('utf-8')
-        click.echo(filesize)
         filename = s.recv(20)
         s.sendall(b'Filename recieved')
         filename = filename.decode('utf-8')
@@ -228,7 +229,7 @@ def reciever():
         click.echo('\n\nFilename: ' + filename)
         click.echo('Recieving file...')
         fullpath = Path.joinpath(downloadpath, filename)
-        with open('FUCKMEINTHEASS', 'wb') as f:
+        with open('new_' + filename, 'wb') as f:
             data = s.recv(1024)
             totaldata = len(data)
             f.write(data)
@@ -243,8 +244,8 @@ def reciever():
         if char == 'm':
             s.shutdown(socket.SHUT_RDWR)
             menu = 'main'
-    else:
-        click.echo('Invalid input')
+        else:
+            click.echo('Invalid input')
 
 if __name__ == '__main__':
     cli()
