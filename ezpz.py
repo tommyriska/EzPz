@@ -246,6 +246,3 @@ def reciever():
             menu = 'main'
         else:
             click.echo('Invalid input')
-
-if __name__ == '__main__':
-    cli()
