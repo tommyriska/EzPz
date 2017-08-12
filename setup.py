@@ -12,9 +12,9 @@ setup(
         ezpz=ezpz:menu
     ''',
 
-    author='Tommy Riska'
-    author_email='tommy.riska@icloud.com'
-    description='Filesharing made easy'
-    keywords='ezpz easy file sharing python sockets'
-    url='https://github.com/tommyriska/ezpz'
+    author='Tommy Riska',
+    author_email='tommy.riska@icloud.com',
+    description='Filesharing made easy',
+    keywords='ezpz easy file sharing python sockets',
+    url='https://github.com/tommyriska/ezpz',
 )
